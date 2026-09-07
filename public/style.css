@@ -47,6 +47,21 @@ button.num {
   min-width: 8rem;
 }
 
+@media (max-width: 600px) {
+  button.num {
+    font-size: 1.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    cursor: pointer;
+    transition:
+      transform 0.1s ease,
+      border-color 0.1s ease;
+    min-width: 8rem;
+  }
+
 button.num:hover {
   border-color: #38bdf8;
   transform: scale(1.03);
