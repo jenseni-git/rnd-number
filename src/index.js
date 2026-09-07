@@ -92,18 +92,18 @@ async function hashIp(ip, secret) {
 
 // ---- Route handlers -------------------------------------------------------
 
-async function checkRateLimit(ip, env, ctx) {
-  const key = `rl:${ip}`;
-  const current = await env.RATE_LIMIT_KV.get(key);
-  const count = current ? parseInt(current, 10) : 0;
+// async function checkRateLimit(ip, env, ctx) {
+//   const key = `rl:${ip}`;
+//   const current = await env.RATE_LIMIT_KV.get(key);
+//   const count = current ? parseInt(current, 10) : 0;
 
-  if (count >= 60) return false; // 60 requests/minute cap
+//   if (count >= 60) return false; // 60 requests/minute cap
 
-  ctx.waitUntil(
-    env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 60 })
-  );
-  return true;
-}
+//   ctx.waitUntil(
+//     env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 60 })
+//   );
+//   return true;
+// }
 
 async function checkBurstLimit(sessionId, env, ctx) {
   const key = `burst:${sessionId}`;
@@ -140,10 +140,10 @@ async function verifyTurnstile(turnstileToken, ip, env) {
 
 async function handlePair(request, env, ctx) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const allowed = await checkRateLimit(ip, env, ctx);
-  if (!allowed) {
-    return json({ error: "rate limit exceeded" }, 429, env);
-  }
+  // const allowed = await checkRateLimit(ip, env, ctx);
+  // if (!allowed) {
+  //   return json({ error: "rate limit exceeded" }, 429, env);
+  // }
 
   const min = parseInt(env.NUM_MIN, 10);
   const max = parseInt(env.NUM_MAX, 10);
@@ -187,10 +187,10 @@ async function handleVote(request, env, ctx) {
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-  const allowed = await checkRateLimit(ip, env, ctx);
-  if (!allowed) {
-    return json({ error: "rate limit exceeded" }, 429, env);
-  }
+  // const allowed = await checkRateLimit(ip, env, ctx);
+  // if (!allowed) {
+  //   return json({ error: "rate limit exceeded" }, 429, env);
+  // }
 
   const burstAllowed = await checkBurstLimit(sessionId, env, ctx);
   if (!burstAllowed) {
