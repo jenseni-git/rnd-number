@@ -91,14 +91,16 @@ async function hashIp(ip, secret) {
 
 // ---- Route handlers -------------------------------------------------------
 
-async function checkRateLimit(ip, env) {
+async function checkRateLimit(ip, env, ctx) {
   const key = `rl:${ip}`;
   const current = await env.RATE_LIMIT_KV.get(key);
   const count = current ? parseInt(current, 10) : 0;
 
   if (count >= 60) return false; // 60 requests/minute cap
 
-  await env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 60 });
+  ctx.waitUntil(
+    env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 60 })
+  );
   return true;
 }
 
@@ -121,12 +123,13 @@ async function verifyTurnstile(turnstileToken, ip, env) {
   return outcome.success === true;
 }
 
-async function handlePair(request, env) {
+async function handlePair(request, env, ctx) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const allowed = await checkRateLimit(ip, env);
+  const allowed = await checkRateLimit(ip, env, ctx);
   if (!allowed) {
     return json({ error: "rate limit exceeded" }, 429, env);
   }
+
   const min = parseInt(env.NUM_MIN, 10);
   const max = parseInt(env.NUM_MAX, 10);
   const ttlMs = parseInt(env.PAIR_TTL_SECONDS, 10) * 1000;
@@ -148,7 +151,7 @@ async function handlePair(request, env) {
   return json({ numA, numB, token, expires: expiry }, 200, env);
 }
 
-async function handleVote(request, env) {
+async function handleVote(request, env, ctx) {
   let body;
   try {
     body = await request.json();
@@ -169,7 +172,7 @@ async function handleVote(request, env) {
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-  const allowed = await checkRateLimit(ip, env);
+  const allowed = await checkRateLimit(ip, env, ctx);
   if (!allowed) {
     return json({ error: "rate limit exceeded" }, 429, env);
   }
@@ -213,7 +216,7 @@ async function handleVote(request, env) {
 // ---- Entry point ----------------------------------------------------------
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
@@ -221,11 +224,11 @@ export default {
     }
 
     if (url.pathname === "/pair" && request.method === "GET") {
-      return handlePair(request, env);
+      return handlePair(request, env, ctx);
     }
 
     if (url.pathname === "/vote" && request.method === "POST") {
-      return handleVote(request, env);
+      return handleVote(request, env, ctx);
     }
 
     return json({ error: "not found" }, 404, env);
