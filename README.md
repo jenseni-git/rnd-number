@@ -5,17 +5,17 @@ choice is logged to D1 for you to export and analyze later.
 
 ## How it works
 
-- `GET /pair` — Worker picks two random numbers, signs an HMAC token
+- `GET /pair` - Worker picks two random numbers, signs an HMAC token
   containing them + an expiry + a random nonce, returns all three to the
   client. The server never trusts a client-supplied pair.
-- `POST /vote` — client sends back `{ token, choice, session_id }`. The
+- `POST /vote` - client sends back `{ token, choice, session_id }`. The
   Worker re-verifies the HMAC, checks the token hasn't expired, and inserts
   a row into D1. The `nonce` column has a `UNIQUE` constraint, so replaying
   the same token twice fails at the database level (returns HTTP 409).
 - `session_id` is a random UUID generated client-side and stored in
   `localStorage`, so you can group "all votes from one visitor" later
   without accounts or cookies.
-- `ip_hash` is `SHA-256(ip + secret)` — lets you dedupe/rate-limit by
+- `ip_hash` is `SHA-256(ip + secret)` - lets you dedupe/rate-limit by
   visitor without storing raw IPs.
 
 ## Deploy steps
@@ -64,7 +64,7 @@ choice is logged to D1 for you to export and analyze later.
 
 ## Bot / abuse mitigation already built in
 
-- Every pair must be fetched from the server first — a bot can't just POST
+- Every pair must be fetched from the server first - a bot can't just POST
   arbitrary numbers, it has to round-trip through `/pair` and get a valid
   signed token.
 - Tokens expire (`PAIR_TTL_SECONDS`, default 120s) and can only be
@@ -73,8 +73,8 @@ choice is logged to D1 for you to export and analyze later.
 
 ## Recommended extra layer (configured in the Cloudflare dashboard, no code)
 
-- **Bot Fight Mode** — Security → Bots → turn on (free tier).
-- **Rate limiting rule** — Security → WAF → Rate limiting rules → limit
+- **Bot Fight Mode** - Security → Bots → turn on (free tier).
+- **Rate limiting rule** - Security → WAF → Rate limiting rules → limit
   `/vote` and `/pair` to e.g. 60 requests/minute per IP.
 
 ## Exporting your data

@@ -4,18 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pick a Number!</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://challenges.cloudflare.com" />
+    <script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+      async
+      defer
+    ></script>
   </head>
   <body>
-    <h1>Which number is more random?</h1>
+    <h1>Which number feels more random?</h1>
     <div class="pair">
-      <button class="num" id="btnA">…</button>
-      <button class="num" id="btnB">…</button>
+      <button class="num" id="btnA">...</button>
+      <button class="num" id="btnB">...</button>
     </div>
     <div id="status"></div>
     <div id="count">
       Responses this session: <span id="sessionCount">0</span>
     </div>
+
+    <div
+      class="cf-turnstile"
+      data-sitekey="0x4AAAAAAErNpwzdjnnmcvva"
+      data-size="invisible"
+      data-callback="onTurnstileSuccess"
+    ></div>
 
     <script>
       // ---- CONFIG: point this at your deployed Worker ----
@@ -29,6 +42,11 @@
 
       let currentToken = null;
       let sessionCount = 0;
+      let turnstileToken = null;
+
+      function onTurnstileSuccess(token) {
+        turnstileToken = token;
+      }
 
       function getSessionId() {
         let id = localStorage.getItem("np_session_id");
@@ -40,12 +58,13 @@
       }
       const sessionId = getSessionId();
 
+      let errCount = 0;
       async function loadPair() {
         statusEl.textContent = "";
         btnA.disabled = true;
         btnB.disabled = true;
-        btnA.textContent = "…";
-        btnB.textContent = "…";
+        btnA.textContent = "...";
+        btnB.textContent = "...";
 
         try {
           const res = await fetch(`${API_BASE}/pair`);
@@ -57,14 +76,25 @@
           btnB.textContent = data.numB;
           btnA.disabled = false;
           btnB.disabled = false;
+          errCount = 0;
         } catch (err) {
-          statusEl.textContent = "Couldn't load a pair — retrying…" + "\n" + err;
-          setTimeout(loadPair, 2000);
+          if (errCount > 0) {
+            statusEl.textContent =
+              "Error loading numbers. Try contacting the site owner if this keeps happening.";
+            setTimeout(loadPair, 2000);
+          } else {
+            statusEl.textContent = "Couldn't load a pair - retrying";
+          }
+          errCount += 1;
         }
       }
 
       async function vote(choice) {
         if (!currentToken) return;
+        if (!turnstileToken) {
+          statusEl.textContent = "Still verifying, one sec...";
+          return;
+        }
         btnA.disabled = true;
         btnB.disabled = true;
 
@@ -76,11 +106,14 @@
               token: currentToken,
               choice,
               session_id: sessionId,
+              turnstile_token: turnstileToken,
             }),
           });
 
           if (res.status === 409) {
-            statusEl.textContent = "That pair expired, loading a new one…";
+            statusEl.textContent = "Pair expired, loading a new one.";
+          } else if (res.status === 403) {
+            statusEl.textContent = "Verification failed, retrying...";
           } else if (!res.ok) {
             throw new Error("vote failed");
           } else {
@@ -88,7 +121,7 @@
             sessionCountEl.textContent = sessionCount;
           }
         } catch (err) {
-          statusEl.textContent = "Vote failed — try again.";
+          statusEl.textContent = "Vote failed. Please try again.";
         }
 
         loadPair();
