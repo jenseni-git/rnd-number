@@ -26,8 +26,9 @@
     <div
       class="cf-turnstile"
       data-sitekey="0x4AAAAAAErNpwzdjnnmcvva"
-      data-size="invisible"
+      data-size="flexible"
       data-callback="onTurnstileSuccess"
+      data-appearance="execute"
     ></div>
 
     <script>
@@ -124,11 +125,20 @@
           statusEl.textContent = "Vote failed. Please try again.";
         }
 
+        turnstileToken = null;
+        if (window.turnstile) {
+          turnstile.execute(".cf-turnstile");
+        }
+
         loadPair();
       }
 
       btnA.addEventListener("click", () => vote(1));
       btnB.addEventListener("click", () => vote(2));
+
+      window.onloadTurnstileCallback = function () {
+        turnstile.execute(".cf-turnstile");
+      };
 
       loadPair();
     </script>
