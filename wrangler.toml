@@ -4,7 +4,7 @@ compatibility_date = "2026-01-01"
 
 # CORS: set this to your actual Pages domain once deployed, e.g. "https://number-picker.pages.dev"
 [vars]
-ALLOWED_ORIGIN = "https://number-picker-api.jenseni.workers.dev"
+ALLOWED_ORIGIN = "https://rnd-number.jenseni.workers.dev"
 NUM_MIN = "0"
 NUM_MAX = "999999"
 PAIR_TTL_SECONDS = "120"
