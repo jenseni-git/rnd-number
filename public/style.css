@@ -1,6 +1,7 @@
 :root {
   color-scheme: light dark;
 }
+
 body {
   font-family: system-ui, sans-serif;
   display: flex;
@@ -13,15 +14,25 @@ body {
   background: #0f172a;
   color: #f1f5f9;
 }
+
 h1 {
   font-weight: 600;
   font-size: 1.25rem;
   opacity: 0.8;
 }
+
 .pair {
   display: flex;
+  flex-direction: row;
   gap: 2rem;
 }
+
+@media (max-width: 600px) {
+  .pair {
+    flex-direction: column; /* Switches when viewport is too narrow */
+  }
+}
+
 button.num {
   font-size: 3rem;
   padding: 2rem 3rem;
@@ -35,23 +46,36 @@ button.num {
     border-color 0.1s ease;
   min-width: 8rem;
 }
+
 button.num:hover {
   border-color: #38bdf8;
   transform: scale(1.03);
 }
+
 button.num:active {
   transform: scale(0.97);
 }
+
 button.num:disabled {
   opacity: 0.5;
   cursor: default;
 }
+
 #status {
   min-height: 1.5rem;
   opacity: 0.7;
   font-size: 0.9rem;
 }
+
 #count {
   opacity: 0.5;
   font-size: 0.8rem;
+}
+
+#infoIcon {
+  height: 2em;
+  width: auto;
+  padding-right: 0.3rem;
+
+  vertical-align: middle;
 }
