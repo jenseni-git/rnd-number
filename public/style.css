@@ -61,6 +61,7 @@ button.num {
       border-color 0.1s ease;
     min-width: 8rem;
   }
+}
 
 button.num:hover {
   border-color: #38bdf8;
