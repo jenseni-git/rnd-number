@@ -32,7 +32,6 @@ const sessionId = getSessionId();
 
 let errCount = 0;
 async function loadPair() {
-  statusEl.textContent = "";
   btnA.disabled = true;
   btnB.disabled = true;
   btnA.textContent = "...";
@@ -49,32 +48,53 @@ async function loadPair() {
     btnA.disabled = false;
     btnB.disabled = false;
     errCount = 0;
+    statusEl.textContent = "";
+
+    if (window.turnstile) {
+      window.turnstile.reset(".cf-turnstile");
+      window.turnstile.execute(".cf-turnstile");
+    }
   } catch (err) {
-    if (errCount > 0) {
+    if (errCount > 10) {
       statusEl.textContent =
         "Error loading numbers. Try contacting the site owner if this keeps happening.";
-      setTimeout(loadPair, 2000);
     } else {
       statusEl.textContent = "Couldn't load a pair - retrying";
+      setTimeout(loadPair, 2000);
     }
     errCount += 1;
   }
 }
 
 async function vote(choice) {
-  if (!currentToken) return;
-  if (!turnstileToken) {
-    statusEl.textContent = "Still verifying, one sec...";
+  if (btnA.disabled || btnB.disabled) return;
+  btnA.disabled = true;
+  btnB.disabled = true;
+
+  if (!currentToken) {
+    btnA.disabled = false;
+    btnB.disabled = false;
     return;
   }
+
+  if (!turnstileToken) {
+    statusEl.textContent = "Still verifying, one sec...";
+    btnA.disabled = false; // Fix deadlock: re-enable buttons so user can click when verified
+    btnB.disabled = false;
+    if (window.turnstile) {
+      window.turnstile.execute(".cf-turnstile");
+    }
+    return;
+  }
+
+  const activeToken = currentToken;
+  currentToken = null; // Clear token immediately to prevent double-clicks
 
   const now = Date.now();
   voteTimestamps = voteTimestamps.filter((t) => now - t < 10000);
 
   if (voteTimestamps.length >= 10) {
     statusEl.textContent = "Slow down a sec...";
-    btnA.disabled = true;
-    btnB.disabled = true;
     setTimeout(() => {
       statusEl.textContent = "";
       btnA.disabled = false;
@@ -85,20 +105,19 @@ async function vote(choice) {
 
   voteTimestamps.push(now);
 
-  btnA.disabled = true;
-  btnB.disabled = true;
-
   try {
     const res = await fetch(`${API_BASE}/vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: currentToken,
+        token: activeToken, // FIX: Pass activeToken here!
         choice,
         session_id: sessionId,
         turnstile_token: turnstileToken,
       }),
     });
+
+    const data = await res.json().catch(() => ({}));
 
     if (res.status === 409) {
       statusEl.textContent = "Pair expired, loading a new one.";
@@ -106,23 +125,24 @@ async function vote(choice) {
       statusEl.textContent = "Verification failed, retrying...";
     } else if (res.status === 429) {
       statusEl.textContent = "Slow down a sec...";
-    } else if (!res.ok) {
-      throw new Error("vote failed");
     } else {
-      sessionCount += 1;
-      sessionCountEl.textContent = sessionCount;
+      statusEl.textContent = data.error || "Vote failed. Please try again.";
     }
+    sessionCount += 1;
+    sessionCountEl.textContent = sessionCount;
   } catch (err) {
-    statusEl.textContent = "Vote failed. Please try again.";
-  }
+    statusEl.textContent = "Network error. Please try again.";
+  } finally {
+    turnstileToken = null;
 
-  turnstileToken = null;
-  if (window.turnstile) {
-    turnstile.execute(".cf-turnstile");
-  }
+    if (window.turnstile) {
+      window.turnstile.execute(".cf-turnstile");
+    }
 
-  loadPair();
+    loadPair();
+  }
 }
+
 
 btnA.addEventListener("click", () => vote(1));
 btnB.addEventListener("click", () => vote(2));

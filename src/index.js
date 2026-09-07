@@ -27,6 +27,7 @@ function json(data, status, env) {
     status,
     headers: {
       "Content-Type": "application/json",
+      "Cache-Control": "no-store",
       ...corsHeaders(env),
     },
   });
@@ -112,7 +113,7 @@ async function checkBurstLimit(sessionId, env, ctx) {
   if (count >= 10) return false; // 10 votes / 10 seconds per session
 
   ctx.waitUntil(
-    env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 10 })
+    env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 60 })
   );
   return true;
 }

@@ -72,10 +72,22 @@ button.num:disabled {
   font-size: 0.8rem;
 }
 
+#infoToggle {
+  cursor: pointer;
+}
+
 #infoIcon {
   height: 2em;
   width: auto;
   padding-right: 0.3rem;
 
   vertical-align: middle;
+}
+
+#info {
+  width: 90%;
+}
+
+.hidden {
+  display: none;
 }

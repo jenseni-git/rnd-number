@@ -23,11 +23,23 @@
       Responses this session: <span id="sessionCount">0</span>
     </div>
 
-    <span
-      title="This website is inspired by rngdle.com, and is a simple experiment to see which numbers people perceive as more random. The numbers are generated using a pseudo-random number generator, and the results are stored in a database. The goal is to see if there are any patterns in the numbers that people choose as more random."
-      ><img id="infoIcon" src="images/info.png" alt="info icon" />What is this
-      website?</span
-    >
+    <div id="info">
+      <div onclick="document.getElementById('description').classList.toggle('hidden')" id="infoToggle">
+        <img id="infoIcon" src="images/info.png" alt="info icon" />
+        <span
+          >What is this
+          website?</span
+        >
+      </div>
+      <div id="description" class="hidden">
+        <p>
+          This website is inspired by rngdle.com, and is a simple experiment to see which numbers people perceive as more random.
+        </p>
+        <p>
+          The numbers are generated using a pseudo-random number generator, and the results are stored in a database. The goal is to see if there are any patterns in the numbers that people choose as more random.
+        </p>
+      </div>
+    </div>
 
     <div
       class="cf-turnstile"
@@ -36,6 +48,13 @@
       data-callback="onTurnstileSuccess"
       data-appearance="execute"
     ></div>
+    <!-- <div
+      class="cf-turnstile"
+      data-sitekey="1x00000000000000000000AA"
+      data-size="flexible"
+      data-callback="onTurnstileSuccess"
+      data-appearance="execute"
+    ></div> -->
     <script src="js/index.js"></script>
   </body>
 </html>
