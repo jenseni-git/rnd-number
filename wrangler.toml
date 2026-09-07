@@ -1,0 +1,18 @@
+name = "number-picker-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# CORS: set this to your actual Pages domain once deployed, e.g. "https://number-picker.pages.dev"
+[vars]
+ALLOWED_ORIGIN = "http://127.0.0.1:8788"
+NUM_MIN = "0"
+NUM_MAX = "999999"
+PAIR_TTL_SECONDS = "120"
+
+[[d1_databases]]
+binding = "DB"                  # accessed in code as env.DB
+database_name = "number-picker-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Secret used to sign pair tokens. Do NOT put the real value here.
+# Set it with: wrangler secret put TOKEN_SECRET

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pick a Number!</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1>Which number is more random?</h1>
+    <div class="pair">
+      <button class="num" id="btnA">…</button>
+      <button class="num" id="btnB">…</button>
+    </div>
+    <div id="status"></div>
+    <div id="count">
+      Responses this session: <span id="sessionCount">0</span>
+    </div>
+
+    <script>
+      // ---- CONFIG: point this at your deployed Worker ----
+      const API_BASE = "http://localhost:8787";
+      // -----------------------------------------------------
+
+      const btnA = document.getElementById("btnA");
+      const btnB = document.getElementById("btnB");
+      const statusEl = document.getElementById("status");
+      const sessionCountEl = document.getElementById("sessionCount");
+
+      let currentToken = null;
+      let sessionCount = 0;
+
+      function getSessionId() {
+        let id = localStorage.getItem("np_session_id");
+        if (!id) {
+          id = crypto.randomUUID();
+          localStorage.setItem("np_session_id", id);
+        }
+        return id;
+      }
+      const sessionId = getSessionId();
+
+      async function loadPair() {
+        statusEl.textContent = "";
+        btnA.disabled = true;
+        btnB.disabled = true;
+        btnA.textContent = "…";
+        btnB.textContent = "…";
+
+        try {
+          const res = await fetch(`${API_BASE}/pair`);
+          if (!res.ok) throw new Error("failed to load pair");
+          const data = await res.json();
+
+          currentToken = data.token;
+          btnA.textContent = data.numA;
+          btnB.textContent = data.numB;
+          btnA.disabled = false;
+          btnB.disabled = false;
+        } catch (err) {
+          statusEl.textContent = "Couldn't load a pair — retrying…" + "\n" + err;
+          setTimeout(loadPair, 2000);
+        }
+      }
+
+      async function vote(choice) {
+        if (!currentToken) return;
+        btnA.disabled = true;
+        btnB.disabled = true;
+
+        try {
+          const res = await fetch(`${API_BASE}/vote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token: currentToken,
+              choice,
+              session_id: sessionId,
+            }),
+          });
+
+          if (res.status === 409) {
+            statusEl.textContent = "That pair expired, loading a new one…";
+          } else if (!res.ok) {
+            throw new Error("vote failed");
+          } else {
+            sessionCount += 1;
+            sessionCountEl.textContent = sessionCount;
+          }
+        } catch (err) {
+          statusEl.textContent = "Vote failed — try again.";
+        }
+
+        loadPair();
+      }
+
+      btnA.addEventListener("click", () => vote(1));
+      btnB.addEventListener("click", () => vote(2));
+
+      loadPair();
+    </script>
+  </body>
+</html>
