@@ -37,7 +37,7 @@ choice is logged to D1 for you to export and analyze later.
    wrangler d1 execute number-picker-db --file=./schema.sql --remote
    ```
 
-4. **Set the token secret** (used to sign/verify pair tokens — pick any
+4. **Set the token secret** (used to sign/verify pair tokens - pick any
    long random string):
    ```
    wrangler secret put TOKEN_SECRET
@@ -93,5 +93,5 @@ wrangler d1 execute number-picker-db --remote \
 - `NUM_MIN` / `NUM_MAX` in `wrangler.toml` control the number range.
 - Numbers can never repeat within a pair (enforced in `handlePair`).
 - If you want a live results view later, add a `GET /results` endpoint
-  that runs an aggregate query — deliberately left out here since you said
+  that runs an aggregate query - deliberately left out here since you said
   raw data export is enough.

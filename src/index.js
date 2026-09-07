@@ -1,5 +1,5 @@
 /**
- * Number Picker API — Cloudflare Worker
+ * Number Picker API - Cloudflare Worker
  *
  * Endpoints:
  *   GET  /pair    -> { numA, numB, token, expires }

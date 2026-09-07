@@ -48,6 +48,9 @@
 
       function onTurnstileSuccess(token) {
         turnstileToken = token;
+        if (statusEl.textContent === "Still verifying, one sec...") {
+          statusEl.textContent = "";
+        }
       }
 
       function getSessionId() {
