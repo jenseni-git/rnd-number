@@ -91,7 +91,42 @@ async function hashIp(ip, secret) {
 
 // ---- Route handlers -------------------------------------------------------
 
+async function checkRateLimit(ip, env) {
+  const key = `rl:${ip}`;
+  const current = await env.RATE_LIMIT_KV.get(key);
+  const count = current ? parseInt(current, 10) : 0;
+
+  if (count >= 60) return false; // 60 requests/minute cap
+
+  await env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 60 });
+  return true;
+}
+
+// ---- Turnstile server-side verification ----------------------------------
+
+async function verifyTurnstile(turnstileToken, ip, env) {
+  if (!turnstileToken) return false;
+
+  const formData = new FormData();
+  formData.append("secret", env.TURNSTILE_SECRET_KEY);
+  formData.append("response", turnstileToken);
+  formData.append("remoteip", ip);
+
+  const res = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    { method: "POST", body: formData }
+  );
+
+  const outcome = await res.json();
+  return outcome.success === true;
+}
+
 async function handlePair(request, env) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const allowed = await checkRateLimit(ip, env);
+  if (!allowed) {
+    return json({ error: "rate limit exceeded" }, 429, env);
+  }
   const min = parseInt(env.NUM_MIN, 10);
   const max = parseInt(env.NUM_MAX, 10);
   const ttlMs = parseInt(env.PAIR_TTL_SECONDS, 10) * 1000;
@@ -121,18 +156,35 @@ async function handleVote(request, env) {
     return json({ error: "invalid JSON" }, 400, env);
   }
 
-  const { token, choice, session_id: sessionId } = body || {};
+  const {
+    token,
+    choice,
+    session_id: sessionId,
+    turnstile_token: turnstileToken,
+  } = body || {};
 
   if (!token || (choice !== 1 && choice !== 2) || !sessionId) {
     return json({ error: "missing or invalid fields" }, 400, env);
   }
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+
+  const allowed = await checkRateLimit(ip, env);
+  if (!allowed) {
+    return json({ error: "rate limit exceeded" }, 429, env);
+  }
+
+  const turnstileOk = await verifyTurnstile(turnstileToken, ip, env);
+  if (!turnstileOk) {
+    return json({ error: "turnstile verification failed" }, 403, env);
+  }
+
 
   const verified = await verifyToken(token, env.TOKEN_SECRET);
   if (!verified) {
     return json({ error: "token invalid or expired" }, 400, env);
   }
 
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const ipHash = await hashIp(ip, env.TOKEN_SECRET);
 
   try {

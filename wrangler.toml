@@ -14,5 +14,9 @@ binding = "DB"                  # accessed in code as env.DB
 database_name = "number-picker-db"
 database_id = "316117e1-327d-4db9-bad7-a83b58b816ea"
 
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "7c54b719c05649f5ac570835bacaf2b3"
+
 # Secret used to sign pair tokens. Do NOT put the real value here.
 # Set it with: wrangler secret put TOKEN_SECRET
