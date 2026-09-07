@@ -104,6 +104,20 @@ async function checkRateLimit(ip, env, ctx) {
   return true;
 }
 
+async function checkBurstLimit(sessionId, env, ctx) {
+  const key = `burst:${sessionId}`;
+  const current = await env.RATE_LIMIT_KV.get(key);
+  const count = current ? parseInt(current, 10) : 0;
+
+  if (count >= 10) return false; // 10 votes / 10 seconds per session
+
+  ctx.waitUntil(
+    env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: 10 })
+  );
+  return true;
+}
+
+
 // ---- Turnstile server-side verification ----------------------------------
 
 async function verifyTurnstile(turnstileToken, ip, env) {
@@ -175,6 +189,11 @@ async function handleVote(request, env, ctx) {
   const allowed = await checkRateLimit(ip, env, ctx);
   if (!allowed) {
     return json({ error: "rate limit exceeded" }, 429, env);
+  }
+
+  const burstAllowed = await checkBurstLimit(sessionId, env, ctx);
+  if (!burstAllowed) {
+    return json({ error: "slow down" }, 429, env);
   }
 
   const turnstileOk = await verifyTurnstile(turnstileToken, ip, env);

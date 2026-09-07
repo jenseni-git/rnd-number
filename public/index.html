@@ -44,6 +44,7 @@
       let currentToken = null;
       let sessionCount = 0;
       let turnstileToken = null;
+      let voteTimestamps = [];
 
       function onTurnstileSuccess(token) {
         turnstileToken = token;
@@ -96,6 +97,24 @@
           statusEl.textContent = "Still verifying, one sec...";
           return;
         }
+
+        const now = Date.now();
+        voteTimestamps = voteTimestamps.filter((t) => now - t < 10000);
+
+        if (voteTimestamps.length >= 10) {
+          statusEl.textContent = "Slow down a sec...";
+          btnA.disabled = true;
+          btnB.disabled = true;
+          setTimeout(() => {
+            statusEl.textContent = "";
+            btnA.disabled = false;
+            btnB.disabled = false;
+          }, 2000);
+          return;
+        }
+
+        voteTimestamps.push(now);
+
         btnA.disabled = true;
         btnB.disabled = true;
 
@@ -115,6 +134,8 @@
             statusEl.textContent = "Pair expired, loading a new one.";
           } else if (res.status === 403) {
             statusEl.textContent = "Verification failed, retrying...";
+          } else if (res.status === 429) {
+            statusEl.textContent = "Slow down a sec...";
           } else if (!res.ok) {
             throw new Error("vote failed");
           } else {
